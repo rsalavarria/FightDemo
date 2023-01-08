@@ -11,9 +11,9 @@ public class PlayerMove : MonoBehaviour
     public float rotationSpeed = 5;
     public Transform cameraTransform;
 
+    public Transform groundCheck;
     public float groundCheckRadius;
     public LayerMask whatIsGround;
-
 
     float turnSmoothVelocity;
 
@@ -21,10 +21,12 @@ public class PlayerMove : MonoBehaviour
     public string groundAnimatorParameter;
     public string moveAnimatorParameter;
 
+    float ySpeed;
+
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
-        animator = GetComponent<Animator>();
+        animator = GetComponentInParent<Animator>();
     }
 
     private void Update()
@@ -47,16 +49,32 @@ public class PlayerMove : MonoBehaviour
             transform.rotation = Quaternion.RotateTowards(transform.rotation, rotateTo, rotationSpeed * Time.deltaTime);
         }*/
 
+        Vector3 moveDirection = Vector3.zero;
+
         if (moveInput.magnitude != 0)
         {
             float targetAngle = Mathf.Atan2(moveInput.x, moveInput.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, .1f);
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            Vector3 moveDirection = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
-            moveDirection.y += Physics.gravity.y * Time.deltaTime * 4f;
-            characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
+            moveDirection = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward * moveInput.magnitude;
         }
+
+        ySpeed += Physics.gravity.y * Time.deltaTime;
+
+        if (characterController.isGrounded)
+        {
+            ySpeed = -0.5f;
+            if (Input.GetKeyDown(KeyCode.Space))
+                ySpeed = 3;
+
+        }
+
+        moveDirection.y = ySpeed;
+
+        characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
+
+
         animator.SetFloat(moveAnimatorParameter, moveInput.magnitude);
 
 
@@ -64,24 +82,25 @@ public class PlayerMove : MonoBehaviour
 
     bool GroundDetected()
     {
-        return Physics.CheckSphere(transform.position, groundCheckRadius, whatIsGround);
+        return Physics.CheckSphere(groundCheck.position, groundCheckRadius, whatIsGround);
     }
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireSphere(transform.position, groundCheckRadius);
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 
     /*public void Move(Vector3 movementDirection)
     {
-        float magnitude = Mathf.Clamp01(movementDirection.magnitude) * moveSpeed;
+        float inputMagnitude = Mathf.Clamp01(movementDirection.magnitude);
 
-        //float speed = inputMagnitude * moveSpeed;
+        float speed = inputMagnitude * moveSpeed;
         movementDirection = Quaternion.AngleAxis(cameraTransform.rotation.eulerAngles.y, Vector3.up) * movementDirection;
         movementDirection.Normalize();
 
-        ySpeed += Physics.gravity.y * Time.deltaTime * 4;
 
+        Vector3 velocity = movementDirection * speed;
+        ySpeed += Physics.gravity.y * Time.deltaTime * 4f;
         if (characterController.isGrounded)
         {
             characterController.stepOffset = originalStepOffset;
@@ -92,9 +111,7 @@ public class PlayerMove : MonoBehaviour
             characterController.stepOffset = 0;
         }
 
-        Vector3 velocity = movementDirection * magnitude;
-        velocity = AdjustVelocityToSlope(velocity);
-        velocity.y += ySpeed;
+        velocity.y = ySpeed;
 
         characterController.Move(velocity * Time.deltaTime);
 

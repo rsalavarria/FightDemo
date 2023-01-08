@@ -22,6 +22,7 @@ public class StateMachineAttack : StateMachineBehaviour
         {
             int nextAttackIndex = ComboController.instance.attackIndex++;
             animator.SetTrigger(ComboController.instance.attacks[nextAttackIndex]);
+            //ComboController.instance.swordDamage.gameObject.SetActive(true);
             ComboController.instance.inputReceived = false;
             ComboController.instance.canReceiveInput = false;
         }
@@ -30,7 +31,7 @@ public class StateMachineAttack : StateMachineBehaviour
     // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        //ComboController.instance.canReceiveInput = false;
+        //ComboController.instance.swordDamage.gameObject.SetActive(false);
     }
 
     // OnStateMove is called right after Animator.OnAnimatorMove()

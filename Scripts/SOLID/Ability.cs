@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class Ability : MonoBehaviour
 {
-    protected bool isExecuting;
+    [HideInInspector]
+    public bool isExecuting;
     protected float currentTime;
 
     protected void StartExecute()

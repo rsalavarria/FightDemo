@@ -6,18 +6,22 @@ public class PlayerController : MonoBehaviour
 {
     CharacterController characterController;
     PlayerMove playerMove;
+    MovePlayer movePlayer;
     Jump jump;
     Roll roll;
     MeleeAttack meleeAttack;
     Animator animator;
 
-    [HideInInspector]
+    public Transform target;
+
+    //[HideInInspector]
     public bool isFalling;
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
         playerMove = GetComponent<PlayerMove>();
+        movePlayer = GetComponent<MovePlayer>();
         jump = GetComponent<Jump>();
         roll = GetComponent<Roll>();
         meleeAttack = GetComponent<MeleeAttack>();
@@ -30,8 +34,8 @@ public class PlayerController : MonoBehaviour
         float horizontalInput = InputManager.instance.GetHorizontalAxisValue();
         float verticalInput = InputManager.instance.GetVerticalAxisValue();
 
-        Vector3 moveInput = new Vector3(horizontalInput, 0, verticalInput).normalized;
-        playerMove.Move(moveInput);
+        Vector3 moveInput = new Vector3(horizontalInput, 0, verticalInput);
+        movePlayer.Move(moveInput);
 
         //animator.SetFloat("Blend", moveInput.magnitude);
 
@@ -47,21 +51,6 @@ public class PlayerController : MonoBehaviour
             {
                 isFalling = false;
             }
-        }
-
-        if (InputManager.instance.GetJumpInput())
-        {
-            jump.Prepare();
-        }
-
-        if (InputManager.instance.GetMeleeAttackInput())
-        {
-            meleeAttack.Prepare();
-        }
-
-        if (InputManager.instance.GetRollInput())
-        {
-            roll.Prepare();
         }
     }
 }

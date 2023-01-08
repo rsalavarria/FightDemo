@@ -7,48 +7,102 @@ public class MovePlayer : MonoBehaviour
     CharacterController characterController;
     Animator animator;
 
-    public Transform cam;
-
-    public float moveSpeed = 5;
+    public float moveSpeed = 10;
+    public float rotationSpeed = 20;
+    public float groundCheckRadius = .5f;
+    public Transform groundCheck;
+    public LayerMask whatIsGround;
+    public Transform cameraTransform;
 
     float turnSmoothVelocity;
+    float originalStepOffset;
+    float ySpeed;
 
-    int isBlendHash;
+    [Header("Animation Parameters")]
+    public string groundedParameter;
+    public string moveParameter;
+    public string jumpParameter;
+    public string doubleJumpParameter;
+
+    bool jumping;
+    bool doubleJumping;
 
     private void Awake()
     {
-        isBlendHash = Animator.StringToHash("Blend");
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
         characterController = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
+        originalStepOffset = characterController.stepOffset;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        Vector3 move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")).normalized;
+        if (GroundDetected())
+            animator.SetBool(groundedParameter, true);
+        else if (!characterController.isGrounded)
+            animator.SetBool(groundedParameter, false);
+    }
 
-        if (move.magnitude != 0)
+    public void Move(Vector3 moveDirection)
+    {
+        float inputMagnitude = Mathf.Clamp01(moveDirection.magnitude);
+
+        float speed = inputMagnitude * moveSpeed;
+
+        Vector3 movementDirection = Vector3.zero;
+
+        if (moveDirection.magnitude != 0)
         {
-            float targetAngle = Mathf.Atan2(move.x, move.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
+            float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, .1f);
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
-            characterController.Move(moveDir * moveSpeed * Time.deltaTime);
+            movementDirection = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward * moveDirection.magnitude;
         }
 
-        HandleMoveAnimation(move);
+
+        Vector3 velocity = movementDirection * speed;
+        ySpeed += Physics.gravity.y * Time.deltaTime;
+        if (characterController.isGrounded)
+        {
+            jumping = doubleJumping = false;
+            animator.ResetTrigger(jumpParameter);
+            animator.ResetTrigger(doubleJumpParameter);
+            //characterController.stepOffset = originalStepOffset;
+            ySpeed = -0.5f;
+            if (Input.GetKeyDown(KeyCode.Space) && !jumping)
+            {
+                ySpeed = 6;
+                jumping = true;
+                animator.SetTrigger(jumpParameter);
+            }
+        }
+        else //if (!GroundDetected() || !characterController.isGrounded)
+        {
+            //characterController.stepOffset = 0;
+            if (Input.GetKeyDown(KeyCode.Space) && jumping && !doubleJumping)
+            {
+                ySpeed = 13;
+                jumping = doubleJumping = true;
+                animator.SetTrigger(doubleJumpParameter);
+            }
+        }
+
+        velocity.y = ySpeed;
+
+        characterController.Move(velocity * Time.deltaTime);
+
+        animator.SetFloat(moveParameter, movementDirection.magnitude);
+
+
     }
 
-    void HandleMoveAnimation(Vector3 currentMovement)
+    bool GroundDetected()
     {
-        Vector3 xzMovement = new Vector3(currentMovement.x, 0, currentMovement.z);
+        return Physics.CheckSphere(groundCheck.position, groundCheckRadius, whatIsGround);
+    }
 
-        animator.SetFloat(isBlendHash, xzMovement.magnitude);
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 }

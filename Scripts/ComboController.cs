@@ -15,6 +15,11 @@ public class ComboController : MonoBehaviour
     public string[] attacks;
     public int attackIndex;
 
+    public Collider swordDamage;
+
+    CharacterController characterController;
+    PlayerController playerController;
+
     private void Awake()
     {
         if (instance != null)
@@ -26,6 +31,8 @@ public class ComboController : MonoBehaviour
     private void Start()
     {
         animator = GetComponent<Animator>();
+        characterController = GetComponent<CharacterController>();
+        playerController = GetComponent<PlayerController>();
     }
 
     // Update is called once per frame
@@ -35,6 +42,7 @@ public class ComboController : MonoBehaviour
         {
             //animator.SetBool("Slash1", true);
             inputReceived = true;
+            //characterController.Move(playerController.target.position);
             //animator.SetTrigger(attacks[attackIndex]);
         }
     }
@@ -42,5 +50,15 @@ public class ComboController : MonoBehaviour
     public void ResetCombo()
     {
         attackIndex = 0;
+    }
+
+    public void ActiveDamageSword()
+    {
+        swordDamage.gameObject.SetActive(true);
+    }
+    
+    public void DeactiveDamageSword()
+    {
+        swordDamage.gameObject.SetActive(false);
     }
 }
